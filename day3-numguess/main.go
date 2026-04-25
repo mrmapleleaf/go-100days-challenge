@@ -11,67 +11,79 @@ import (
 )
 
 func main() {
-	fmt.Println(10 / float64(64))
-
-	scanner := bufio.NewScanner(os.Stdin)
-
-	fmt.Println("===== 数当てゲーム =====")
-	fmt.Println("難易度を選んでください:")
-	fmt.Println("  1: かんたん (1〜50)")
-	fmt.Println("  2: ふつう  (1〜100)")
-	fmt.Println("  3: むずい  (1〜1000)")
-	fmt.Print("選択: ")
-
-	scanner.Scan()
-	maxNum, maxAttempts := chooseDificulty(strings.TrimSpace(scanner.Text()))
-
-	answer := rand.IntN(100) + 1
-	attempts := 0
-	var start time.Time = time.Now()
-
-	fmt.Println()
-	fmt.Printf("1〜%dの数を当ててください（最大%d回）\n", maxNum, maxAttempts)
-	fmt.Println()
 
 	for {
-		remaining := maxAttempts - attempts
-		fmt.Printf("予想（残り%d回）: ", remaining)
+	
+		scanner := bufio.NewScanner(os.Stdin)
+
+		fmt.Println("===== 数当てゲーム =====")
+		fmt.Println("難易度を選んでください:")
+		fmt.Println("  1: かんたん (1〜50)")
+		fmt.Println("  2: ふつう  (1〜100)")
+		fmt.Println("  3: むずい  (1〜1000)")
+		fmt.Print("選択: ")
+
 		scanner.Scan()
-		input := strings.TrimSpace(scanner.Text())
+		maxNum, maxAttempts := chooseDificulty(strings.TrimSpace(scanner.Text()))
 
-		guess, err := strconv.Atoi(input)
-		if err != nil {
-			fmt.Println(" -> 数値を入力してください")
-			continue
+		answer := rand.IntN(maxNum) + 1
+		attempts := 0
+		var start time.Time = time.Now()
+
+		fmt.Println()
+		fmt.Printf("1〜%dの数を当ててください（最大%d回）\n", maxNum, maxAttempts)
+		fmt.Println()
+
+		for {
+			remaining := maxAttempts - attempts
+			fmt.Printf("予想（残り%d回）: ", remaining)
+			scanner.Scan()
+			input := strings.TrimSpace(scanner.Text())
+
+			guess, err := strconv.Atoi(input)
+			if err != nil {
+				fmt.Println(" -> 数値を入力してください")
+				continue
+			}
+
+			if guess < 1 || guess > maxNum {
+				fmt.Printf(" -> 1〜%dの範囲で入力してください\n", maxNum)
+				continue
+			}
+
+			attempts++
+
+			if guess < answer {
+				fmt.Println(" -> もっと大きい！")
+			} else if guess > answer {
+				fmt.Println(" -> もっと小さい！")
+			} else {
+				// time.Sinceでstartから経過した時間を取得できる
+				var elapsed time.Duration = time.Since(start)
+				fmt.Println()
+				fmt.Printf("正解！ %d でした！\n", answer)
+				fmt.Printf("試行回数: %d回\n", attempts)
+				fmt.Printf("所要時間: %.1f秒\n", elapsed.Seconds())
+				printRank(attempts, maxAttempts)
+				break
+			}
+
+			if attempts >= maxAttempts {
+				fmt.Println()
+				fmt.Printf("ゲームオーバー！ 正解は %d でした\n", answer)
+				break
+			}
 		}
 
-		if guess < 1 || guess > maxNum {
-			fmt.Printf(" -> 1〜%dの範囲で入力してください\n", maxNum)
-			continue
-		}
-
-		attempts++
-
-		if guess < answer {
-			fmt.Println(" -> もっと大きい！")
-		} else if guess > answer {
-			fmt.Println(" -> もっと小さい！")
-		} else {
-			// time.Sinceでstartから経過した時間を取得できる
-			var elapsed time.Duration = time.Since(start)
-			fmt.Println()
-			fmt.Printf("正解！ %d でした！\n", answer)
-			fmt.Printf("試行回数: %d回\n", attempts)
-			fmt.Printf("所要時間: %.1f秒\n", elapsed.Seconds())
-			printRank(attempts, maxAttempts)
+		// リプレイ確認
+		fmt.Println()
+		fmt.Print("もう一度遊ぶ？ (y/n): ")
+		scanner.Scan()
+		if strings.ToLower(strings.TrimSpace(scanner.Text())) != "y" {
+			fmt.Println("ありがとうございました！")
 			break
 		}
-
-		if attempts >= maxAttempts {
-			fmt.Println()
-			fmt.Printf("ゲームオーバー！ 正解は %d でした\n", answer)
-			break
-		}
+		fmt.Println()
 	}
 }
 
@@ -90,6 +102,7 @@ func chooseDificulty(choice string) (maxNum int, maxAttempts int) {
 
 func printRank(attempts, maxAttempt int) {
 	ratio := float64(attempts) / float64(maxAttempt)
+	// switchでcase文に直接条件式を書くパターン
 	switch {
 		case attempts == 1:
 			fmt.Println("ランク: S（神）")
